@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import html
-import json
 import random
 import secrets
-import string
 import time
 import uuid
 from datetime import datetime, timezone
@@ -12,16 +10,17 @@ from typing import Any
 
 import qrcode
 import streamlit as st
+from postgrest.exceptions import APIError
 from supabase import Client, create_client
 
 
-# =========================================================
-# App configuration
-# =========================================================
+# ============================================================
+# BB Games configuration
+# ============================================================
 
 st.set_page_config(
     page_title="BB Games",
-    page_icon="🧸",
+    page_icon="🍉",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -36,9 +35,9 @@ GAME_NAMES = {
 }
 
 
-# =========================================================
-# Game content
-# =========================================================
+# ============================================================
+# Baby-shower game content
+# ============================================================
 
 BINGO_WORDS = [
     "Baby bottle",
@@ -76,25 +75,35 @@ BINGO_WORDS = [
 PRICE_ROUNDS = [
     {
         "title": "Newborn Diapers",
-        "description": "One package of approximately 30 newborn-size diapers.",
+        "description": (
+            "One package containing approximately 30 "
+            "newborn-size diapers."
+        ),
         "price": 10.99,
         "emoji": "🧷",
     },
     {
         "title": "Baby Wipes",
-        "description": "A three-pack containing approximately 168 unscented wipes.",
+        "description": (
+            "A three-pack containing approximately "
+            "168 unscented wipes."
+        ),
         "price": 8.49,
         "emoji": "🫧",
     },
     {
-        "title": "Three Baby Bodysuits",
-        "description": "A three-pack of short-sleeve cotton bodysuits.",
+        "title": "Baby Bodysuits",
+        "description": (
+            "A three-pack of short-sleeve cotton baby bodysuits."
+        ),
         "price": 14.99,
         "emoji": "👕",
     },
     {
         "title": "Baby Shampoo",
-        "description": "One 13.6-fluid-ounce bottle of gentle baby shampoo.",
+        "description": (
+            "One 13.6-fluid-ounce bottle of gentle baby shampoo."
+        ),
         "price": 6.49,
         "emoji": "🛁",
     },
@@ -106,7 +115,7 @@ PRICE_ROUNDS = [
     },
     {
         "title": "Digital Thermometer",
-        "description": "A basic digital baby thermometer.",
+        "description": "One basic digital baby thermometer.",
         "price": 16.99,
         "emoji": "🌡️",
     },
@@ -118,7 +127,9 @@ PRICE_ROUNDS = [
     },
     {
         "title": "Nursery Bundle",
-        "description": "A baby monitor, diaper bag, and soft infant carrier.",
+        "description": (
+            "A baby monitor, diaper bag, and soft infant carrier."
+        ),
         "price": 164.97,
         "emoji": "🎁",
     },
@@ -130,22 +141,33 @@ QUIZ_CATEGORIES = [
         "questions": [
             {
                 "value": 100,
-                "question": "What item is fastened around a baby during feeding?",
+                "question": (
+                    "What item is fastened around a baby "
+                    "during feeding?"
+                ),
                 "answer": "A bib",
             },
             {
                 "value": 200,
-                "question": "What furniture is designed for a baby to sleep in?",
+                "question": (
+                    "What furniture is designed for a baby to sleep in?"
+                ),
                 "answer": "A crib",
             },
             {
                 "value": 300,
-                "question": "What cloth is placed over a shoulder while burping a baby?",
+                "question": (
+                    "What cloth is placed over a shoulder "
+                    "while burping a baby?"
+                ),
                 "answer": "A burp cloth",
             },
             {
                 "value": 400,
-                "question": "What is wrapping a baby snugly in a blanket called?",
+                "question": (
+                    "What is wrapping a baby snugly in "
+                    "a blanket called?"
+                ),
                 "answer": "Swaddling",
             },
         ],
@@ -180,22 +202,32 @@ QUIZ_CATEGORIES = [
         "questions": [
             {
                 "value": 100,
-                "question": "Which nursery-rhyme character sat on a wall?",
+                "question": (
+                    "Which nursery-rhyme character sat on a wall?"
+                ),
                 "answer": "Humpty Dumpty",
             },
             {
                 "value": 200,
-                "question": "Which little star is described as being wondered about?",
+                "question": (
+                    "Which little star is described as "
+                    "being wondered about?"
+                ),
                 "answer": "Twinkle, Twinkle, Little Star",
             },
             {
                 "value": 300,
-                "question": "Which nursery-rhyme sheep was asked whether it had wool?",
+                "question": (
+                    "Which nursery-rhyme sheep was asked "
+                    "whether it had wool?"
+                ),
                 "answer": "Baa, Baa, Black Sheep",
             },
             {
                 "value": 400,
-                "question": "Which character lost her sheep?",
+                "question": (
+                    "Which character lost her sheep?"
+                ),
                 "answer": "Little Bo-Peep",
             },
         ],
@@ -205,22 +237,33 @@ QUIZ_CATEGORIES = [
         "questions": [
             {
                 "value": 100,
-                "question": "What portable bag holds diapers, wipes, and spare clothes?",
+                "question": (
+                    "What portable bag holds diapers, "
+                    "wipes, and spare clothes?"
+                ),
                 "answer": "A diaper bag",
             },
             {
                 "value": 200,
-                "question": "What padded surface is used during diaper changes?",
+                "question": (
+                    "What padded surface is used during diaper changes?"
+                ),
                 "answer": "A changing pad",
             },
             {
                 "value": 300,
-                "question": "What device lets caregivers hear or see a baby from another room?",
+                "question": (
+                    "What device lets caregivers hear or "
+                    "see a baby from another room?"
+                ),
                 "answer": "A baby monitor",
             },
             {
                 "value": 400,
-                "question": "What seat secures an infant while traveling in a vehicle?",
+                "question": (
+                    "What seat secures an infant while "
+                    "traveling in a vehicle?"
+                ),
                 "answer": "An infant car seat",
             },
         ],
@@ -228,31 +271,50 @@ QUIZ_CATEGORIES = [
 ]
 
 
-# =========================================================
-# Styling
-# =========================================================
+# ============================================================
+# Watermelon styling
+# ============================================================
 
 st.markdown(
     """
     <style>
         :root {
-            --bb-cream: #fffaf3;
-            --bb-pink: #e8799a;
-            --bb-pink-dark: #c64f75;
-            --bb-purple: #60406f;
-            --bb-purple-dark: #3e2949;
-            --bb-mint: #bce9d9;
-            --bb-yellow: #ffdc82;
-            --bb-blue: #b8dff1;
-            --bb-ink: #34293a;
+            --wm-red: #ef476f;
+            --wm-red-dark: #c72c50;
+            --wm-pink: #ff8099;
+            --wm-green: #2a9d62;
+            --wm-green-dark: #176b43;
+            --wm-green-light: #bce9c8;
+            --wm-rind: #76c893;
+            --wm-cream: #fffaf5;
+            --wm-seed: #2a2024;
+            --wm-white: #ffffff;
+            --wm-muted: #74666b;
+            --wm-yellow: #ffe39a;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         .stApp {
+            color: var(--wm-seed);
             background:
-                radial-gradient(circle at 5% 0%, #ffe3ea 0, transparent 26%),
-                radial-gradient(circle at 95% 5%, #dcf4ec 0, transparent 24%),
-                var(--bb-cream);
-            color: var(--bb-ink);
+                radial-gradient(
+                    circle at 10% 0%,
+                    rgba(255, 128, 153, 0.28) 0,
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 96% 7%,
+                    rgba(118, 200, 147, 0.32) 0,
+                    transparent 27%
+                ),
+                linear-gradient(
+                    180deg,
+                    #fffdf8 0%,
+                    var(--wm-cream) 100%
+                );
         }
 
         [data-testid="stHeader"] {
@@ -265,251 +327,295 @@ st.markdown(
 
         .block-container {
             max-width: 1180px;
-            padding-top: 1.4rem;
+            padding-top: 1.2rem;
             padding-bottom: 4rem;
         }
 
         h1, h2, h3 {
-            color: var(--bb-purple-dark);
+            color: var(--wm-green-dark);
         }
 
-        .bb-brand {
+        .wm-brand {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            margin-bottom: 1.2rem;
+            gap: 0.85rem;
+            margin-bottom: 1.3rem;
         }
 
-        .bb-logo {
+        .wm-logo {
             display: grid;
-            width: 3.2rem;
-            height: 3.2rem;
+            width: 3.5rem;
+            height: 3.5rem;
             place-items: center;
-            border-radius: 1rem;
-            color: white;
-            background: var(--bb-purple);
-            font-size: 1.75rem;
-            box-shadow: 0 12px 28px rgba(62, 41, 73, 0.18);
+            border: 4px solid var(--wm-green);
+            border-radius: 50%;
+            background: var(--wm-red);
+            box-shadow: 0 12px 28px rgba(42, 157, 98, 0.22);
+            font-size: 2rem;
         }
 
-        .bb-brand-name {
-            margin: 0;
-            color: var(--bb-purple-dark);
-            font-size: 2rem;
-            font-weight: 900;
+        .wm-brand-name {
+            color: var(--wm-green-dark);
+            font-size: 2.1rem;
+            font-weight: 950;
             line-height: 1;
         }
 
-        .bb-brand-copy {
-            margin: 0.25rem 0 0;
-            color: #766b7b;
+        .wm-brand-copy {
+            margin: 0.3rem 0 0;
+            color: var(--wm-muted);
         }
 
-        .bb-card {
-            padding: clamp(1.2rem, 4vw, 2rem);
-            border: 1px solid rgba(96, 64, 111, 0.1);
-            border-radius: 1.5rem;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 14px 38px rgba(62, 41, 73, 0.11);
-        }
-
-        .bb-hero {
-            padding: clamp(1.5rem, 5vw, 3.2rem);
-            border-radius: 1.75rem;
+        .wm-hero {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(1.5rem, 6vw, 3.6rem);
+            border: 5px solid var(--wm-green);
+            border-radius: 2rem;
+            color: white;
             background:
+                radial-gradient(
+                    circle at 85% 20%,
+                    var(--wm-seed) 0 5px,
+                    transparent 6px
+                ),
+                radial-gradient(
+                    circle at 91% 45%,
+                    var(--wm-seed) 0 5px,
+                    transparent 6px
+                ),
+                radial-gradient(
+                    circle at 80% 66%,
+                    var(--wm-seed) 0 5px,
+                    transparent 6px
+                ),
                 linear-gradient(
                     135deg,
-                    rgba(255,255,255,0.96),
-                    rgba(255,248,250,0.96)
+                    var(--wm-red) 0%,
+                    #ff708d 100%
                 );
-            box-shadow: 0 16px 44px rgba(62, 41, 73, 0.12);
+            box-shadow:
+                0 0 0 9px var(--wm-green-light),
+                0 18px 44px rgba(42, 32, 36, 0.16);
         }
 
-        .bb-hero h1 {
-            margin: 0 0 0.7rem;
-            font-size: clamp(2.8rem, 8vw, 5.7rem);
-            line-height: 0.95;
+        .wm-hero h1 {
+            max-width: 720px;
+            margin: 0 0 0.8rem;
+            color: white;
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 0.92;
         }
 
-        .bb-subtitle {
-            max-width: 42rem;
-            color: #74697b;
-            font-size: 1.08rem;
+        .wm-hero p {
+            max-width: 700px;
+            margin: 0;
+            color: white;
+            font-size: 1.1rem;
             line-height: 1.6;
         }
 
-        .bb-room-code {
+        .wm-card {
+            padding: clamp(1.1rem, 4vw, 2rem);
+            border: 2px solid rgba(42, 157, 98, 0.16);
+            border-radius: 1.5rem;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 14px 34px rgba(42, 32, 36, 0.09);
+        }
+
+        .wm-room-code {
             display: inline-block;
-            padding: 0.7rem 1rem;
+            padding: 0.72rem 1.05rem;
+            border: 3px solid var(--wm-green);
             border-radius: 999px;
-            color: var(--bb-purple-dark);
-            background: #f2e8f5;
-            font-size: 1.15rem;
-            font-weight: 900;
+            color: var(--wm-green-dark);
+            background: var(--wm-green-light);
+            font-size: 1.1rem;
+            font-weight: 950;
             letter-spacing: 0.18rem;
         }
 
-        .bb-game-card {
-            min-height: 10rem;
-            padding: 1.2rem;
-            border-radius: 1.3rem;
-            background: #fff2f6;
+        .wm-game-card {
+            min-height: 11rem;
+            padding: 1.25rem;
+            border: 3px solid var(--wm-rind);
+            border-radius: 1.4rem;
+            background: #fff1f4;
         }
 
-        .bb-game-card.mint {
-            background: #edf9f5;
+        .wm-game-card.green {
+            background: #edf9f1;
         }
 
-        .bb-game-card.yellow {
+        .wm-game-card.yellow {
             background: #fff8df;
         }
 
-        .bb-game-icon {
-            font-size: 2.5rem;
+        .wm-game-icon {
+            font-size: 2.6rem;
         }
 
-        .bb-game-title {
-            margin-top: 0.4rem;
-            color: var(--bb-purple-dark);
+        .wm-game-title {
+            margin-top: 0.45rem;
+            color: var(--wm-green-dark);
             font-size: 1.3rem;
-            font-weight: 900;
+            font-weight: 950;
         }
 
-        .bb-muted {
-            color: #766b7b;
+        .wm-muted {
+            color: var(--wm-muted);
         }
 
-        .bb-called {
+        .wm-called {
             display: grid;
             min-height: 12rem;
             padding: 2rem;
             place-items: center;
-            border-radius: 1.5rem;
-            color: var(--bb-purple-dark);
-            background: var(--bb-mint);
+            border: 6px solid var(--wm-green);
+            border-radius: 1.7rem;
+            color: white;
+            background:
+                radial-gradient(
+                    circle at 12% 22%,
+                    var(--wm-seed) 0 4px,
+                    transparent 5px
+                ),
+                radial-gradient(
+                    circle at 88% 25%,
+                    var(--wm-seed) 0 4px,
+                    transparent 5px
+                ),
+                radial-gradient(
+                    circle at 74% 78%,
+                    var(--wm-seed) 0 4px,
+                    transparent 5px
+                ),
+                var(--wm-red);
             text-align: center;
             font-size: clamp(2rem, 8vw, 4.8rem);
             font-weight: 950;
         }
 
-        .bb-price {
+        .wm-price {
             padding: 2rem;
-            border-radius: 1.5rem;
-            background: #fff5d8;
+            border: 5px solid var(--wm-green);
+            border-radius: 1.6rem;
+            background: #fff0f3;
             text-align: center;
         }
 
-        .bb-product-emoji {
-            font-size: 4rem;
+        .wm-product-emoji {
+            font-size: 4.3rem;
         }
 
-        .bb-actual-price {
-            color: var(--bb-pink-dark);
+        .wm-actual-price {
+            color: var(--wm-red-dark);
             font-size: clamp(3rem, 9vw, 6rem);
             font-weight: 950;
-        }
-
-        .bb-question {
-            padding: 2rem;
-            border-radius: 1.5rem;
-            background: #e9f6fb;
             text-align: center;
         }
 
-        .bb-question-text {
-            color: var(--bb-purple-dark);
+        .wm-question {
+            padding: 2rem;
+            border: 5px solid var(--wm-green);
+            border-radius: 1.6rem;
+            background: #fff0f3;
+            text-align: center;
+        }
+
+        .wm-question-text {
+            color: var(--wm-green-dark);
             font-size: clamp(1.6rem, 5vw, 3rem);
-            font-weight: 900;
+            font-weight: 950;
             line-height: 1.15;
         }
 
-        .bb-answer {
+        .wm-answer {
             margin-top: 1rem;
             padding: 1rem;
             border-radius: 1rem;
-            background: var(--bb-mint);
-            color: var(--bb-purple-dark);
+            color: white;
+            background: var(--wm-green);
             font-size: 1.2rem;
             font-weight: 900;
         }
 
-        .bb-score-row {
+        .wm-score-row {
             display: flex;
             justify-content: space-between;
             gap: 1rem;
-            padding: 0.7rem 0.9rem;
+            padding: 0.72rem 0.9rem;
             margin-bottom: 0.45rem;
+            border-left: 5px solid var(--wm-green);
             border-radius: 0.85rem;
-            background: #faf5fb;
+            background: #fff2f4;
         }
 
-        .bb-score-value {
-            color: var(--bb-pink-dark);
-            font-weight: 900;
+        .wm-score-value {
+            color: var(--wm-red-dark);
+            font-weight: 950;
         }
 
-        .bb-pill {
+        .wm-pill {
             display: inline-block;
-            padding: 0.4rem 0.65rem;
-            margin: 0.2rem;
+            padding: 0.42rem 0.7rem;
+            margin: 0.22rem;
+            border: 1px solid var(--wm-green);
             border-radius: 999px;
-            color: var(--bb-purple-dark);
-            background: #f1e8f4;
+            color: var(--wm-green-dark);
+            background: var(--wm-green-light);
             font-size: 0.84rem;
-            font-weight: 800;
+            font-weight: 850;
         }
 
-        .bb-bingo-grid {
+        .wm-quiz-header {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 0.35rem;
-            margin: 1rem 0;
-        }
-
-        .bb-bingo-space {
-            display: grid;
-            min-height: 5rem;
-            padding: 0.3rem;
+            min-height: 4.1rem;
+            padding: 0.5rem;
             place-items: center;
             border-radius: 0.75rem;
-            color: var(--bb-purple-dark);
-            background: #f4ebf6;
-            text-align: center;
-            font-size: clamp(0.58rem, 2.5vw, 0.85rem);
-            font-weight: 800;
-        }
-
-        .bb-bingo-space.marked {
             color: white;
-            background: var(--bb-pink-dark);
-        }
-
-        .bb-quiz-header {
-            min-height: 4rem;
-            display: grid;
-            place-items: center;
-            padding: 0.5rem;
-            border-radius: 0.7rem;
-            color: white;
-            background: var(--bb-purple-dark);
+            background: var(--wm-green-dark);
             text-align: center;
-            font-weight: 900;
+            font-weight: 950;
         }
 
         .stButton > button {
-            min-height: 2.9rem;
+            min-height: 2.95rem;
             border: 0;
-            border-radius: 0.85rem;
-            font-weight: 800;
+            border-radius: 0.9rem;
+            color: white;
+            background: var(--wm-green);
+            font-weight: 850;
+        }
+
+        .stButton > button:hover {
+            border: 0;
+            color: white;
+            background: var(--wm-green-dark);
         }
 
         .stButton > button[kind="primary"] {
-            background: var(--bb-pink-dark);
+            color: white;
+            background: var(--wm-red-dark);
+        }
+
+        .stButton > button[kind="primary"]:hover {
+            color: white;
+            background: #a92042;
         }
 
         .stTextInput input,
         .stNumberInput input {
-            border-radius: 0.8rem;
+            border: 2px solid var(--wm-green-light);
+            border-radius: 0.85rem;
+        }
+
+        [data-testid="stMetric"] {
+            padding: 0.7rem 1rem;
+            border: 2px solid var(--wm-green);
+            border-radius: 1rem;
+            background: white;
         }
 
         @media (max-width: 640px) {
@@ -518,12 +624,12 @@ st.markdown(
                 padding-right: 0.7rem;
             }
 
-            .bb-card {
+            .wm-card {
                 border-radius: 1.1rem;
             }
 
-            .bb-bingo-space {
-                min-height: 4.2rem;
+            .wm-hero {
+                border-radius: 1.3rem;
             }
         }
     </style>
@@ -532,36 +638,123 @@ st.markdown(
 )
 
 
-# =========================================================
-# Supabase connection
-# =========================================================
+# ============================================================
+# Supabase connection and error handling
+# ============================================================
 
 @st.cache_resource
 def get_database() -> Client:
     try:
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_SERVICE_KEY"]
-    except KeyError as exc:
+        url = str(st.secrets["SUPABASE_URL"]).strip()
+
+        key = str(
+            st.secrets.get(
+                "SUPABASE_SECRET_KEY",
+                st.secrets.get("SUPABASE_SERVICE_KEY", ""),
+            )
+        ).strip()
+
+    except Exception as exc:
         raise RuntimeError(
-            "Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in Streamlit secrets."
+            "Unable to read the Supabase configuration from "
+            "Streamlit secrets."
         ) from exc
 
-    return create_client(url, key)
+    if not url:
+        raise RuntimeError(
+            "SUPABASE_URL is missing from Streamlit secrets."
+        )
+
+    if not url.startswith("https://"):
+        raise RuntimeError(
+            "SUPABASE_URL must begin with https://"
+        )
+
+    if ".supabase.co" not in url:
+        raise RuntimeError(
+            "SUPABASE_URL must be your Supabase project URL."
+        )
+
+    if not key:
+        raise RuntimeError(
+            "SUPABASE_SECRET_KEY is missing from Streamlit secrets."
+        )
+
+    if key.startswith("sb_publishable_"):
+        raise RuntimeError(
+            "The app is using a publishable Supabase key. "
+            "Use the server-side key beginning with sb_secret_."
+        )
+
+    try:
+        return create_client(url, key)
+    except Exception as exc:
+        raise RuntimeError(
+            "The Supabase client could not be initialized."
+        ) from exc
 
 
-db = get_database()
+try:
+    db = get_database()
+except Exception as database_error:
+    st.error("BB Games could not connect to Supabase.")
+    st.exception(database_error)
+    st.stop()
 
 
-# =========================================================
-# Utilities
-# =========================================================
+def display_api_error(
+    exc: APIError,
+    heading: str = "Supabase rejected the request.",
+) -> None:
+    error_data: dict[str, Any] = {}
+
+    if exc.args and isinstance(exc.args[0], dict):
+        error_data = exc.args[0]
+
+    error_code = str(error_data.get("code", "unknown"))
+    error_message = str(
+        error_data.get("message", heading)
+    )
+    error_details = str(error_data.get("details") or "")
+    error_hint = str(error_data.get("hint") or "")
+
+    st.error(f"Supabase error {error_code}: {error_message}")
+
+    if error_code in {"42P01", "PGRST205"}:
+        st.warning(
+            "The BB Games tables were not found. Run "
+            "`supabase_setup.sql` in the Supabase SQL Editor."
+        )
+
+    if error_code == "42501":
+        st.warning(
+            "Supabase blocked this request. Confirm the app is using "
+            "an `sb_secret_...` key and not an `sb_publishable_...` key."
+        )
+
+    if error_code == "PGRST204":
+        st.warning(
+            "A required database column is missing. Run the latest "
+            "BB Games SQL setup script."
+        )
+
+    if error_details:
+        st.caption(f"Details: {error_details}")
+
+    if error_hint:
+        st.caption(f"Hint: {error_hint}")
+
+
+# ============================================================
+# Utility functions
+# ============================================================
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
 def safe_text(value: Any, length: int = 100) -> str:
-    return str(value or "").strip()[:length]
+    return str(value or "").replace("<", "").replace(">", "").strip()[:length]
 
 
 def money(value: float) -> str:
@@ -577,13 +770,18 @@ def make_room_code() -> str:
             for _ in range(ROOM_CODE_LENGTH)
         )
 
-        existing = (
-            db.table("rooms")
-            .select("code")
-            .eq("code", code)
-            .execute()
-            .data
-        )
+        try:
+            existing = (
+                db.table("rooms")
+                .select("code")
+                .eq("code", code)
+                .limit(1)
+                .execute()
+                .data
+            )
+        except APIError as exc:
+            display_api_error(exc)
+            st.stop()
 
         if not existing:
             return code
@@ -592,19 +790,19 @@ def make_room_code() -> str:
 
 
 def make_host_key() -> str:
-    return secrets.token_urlsafe(24)
+    return secrets.token_urlsafe(32)
 
 
 def make_bingo_card() -> list[dict[str, Any]]:
-    selected = random.sample(BINGO_WORDS, 24)
-    selected.insert(12, "FREE")
+    words = random.sample(BINGO_WORDS, 24)
+    words.insert(12, "FREE")
 
     return [
         {
-            "label": label,
-            "marked": label == "FREE",
+            "label": word,
+            "marked": word == "FREE",
         }
-        for label in selected
+        for word in words
     ]
 
 
@@ -633,26 +831,34 @@ def default_game_state() -> dict[str, Any]:
 def get_room(room_code: str) -> dict[str, Any] | None:
     code = safe_text(room_code, ROOM_CODE_LENGTH).upper()
 
-    response = (
-        db.table("rooms")
-        .select("*")
-        .eq("code", code)
-        .limit(1)
-        .execute()
-    )
+    try:
+        response = (
+            db.table("rooms")
+            .select("*")
+            .eq("code", code)
+            .limit(1)
+            .execute()
+        )
+    except APIError as exc:
+        display_api_error(exc)
+        return None
 
     return response.data[0] if response.data else None
 
 
 def get_players(room_code: str) -> list[dict[str, Any]]:
-    response = (
-        db.table("players")
-        .select("*")
-        .eq("room_code", room_code)
-        .order("score", desc=True)
-        .order("name")
-        .execute()
-    )
+    try:
+        response = (
+            db.table("players")
+            .select("*")
+            .eq("room_code", room_code)
+            .order("score", desc=True)
+            .order("name")
+            .execute()
+        )
+    except APIError as exc:
+        display_api_error(exc)
+        return []
 
     return response.data or []
 
@@ -661,14 +867,18 @@ def get_player(
     room_code: str,
     player_id: str,
 ) -> dict[str, Any] | None:
-    response = (
-        db.table("players")
-        .select("*")
-        .eq("room_code", room_code)
-        .eq("id", player_id)
-        .limit(1)
-        .execute()
-    )
+    try:
+        response = (
+            db.table("players")
+            .select("*")
+            .eq("room_code", room_code)
+            .eq("id", player_id)
+            .limit(1)
+            .execute()
+        )
+    except APIError as exc:
+        display_api_error(exc)
+        return None
 
     return response.data[0] if response.data else None
 
@@ -676,29 +886,39 @@ def get_player(
 def update_room(
     room_code: str,
     values: dict[str, Any],
-) -> None:
+) -> bool:
     values["updated_at"] = now_iso()
 
-    (
-        db.table("rooms")
-        .update(values)
-        .eq("code", room_code)
-        .execute()
-    )
+    try:
+        (
+            db.table("rooms")
+            .update(values)
+            .eq("code", room_code)
+            .execute()
+        )
+        return True
+    except APIError as exc:
+        display_api_error(exc)
+        return False
 
 
 def update_player(
     player_id: str,
     values: dict[str, Any],
-) -> None:
+) -> bool:
     values["updated_at"] = now_iso()
 
-    (
-        db.table("players")
-        .update(values)
-        .eq("id", player_id)
-        .execute()
-    )
+    try:
+        (
+            db.table("players")
+            .update(values)
+            .eq("id", player_id)
+            .execute()
+        )
+        return True
+    except APIError as exc:
+        display_api_error(exc)
+        return False
 
 
 def get_responses(
@@ -706,15 +926,19 @@ def get_responses(
     game: str,
     round_key: str,
 ) -> list[dict[str, Any]]:
-    response = (
-        db.table("responses")
-        .select("*")
-        .eq("room_code", room_code)
-        .eq("game", game)
-        .eq("round_key", round_key)
-        .order("created_at")
-        .execute()
-    )
+    try:
+        response = (
+            db.table("responses")
+            .select("*")
+            .eq("room_code", room_code)
+            .eq("game", game)
+            .eq("round_key", round_key)
+            .order("created_at")
+            .execute()
+        )
+    except APIError as exc:
+        display_api_error(exc)
+        return []
 
     return response.data or []
 
@@ -725,7 +949,7 @@ def save_response(
     game: str,
     round_key: str,
     answer: dict[str, Any],
-) -> None:
+) -> bool:
     row = {
         "id": str(uuid.uuid4()),
         "room_code": room_code,
@@ -739,134 +963,98 @@ def save_response(
         "updated_at": now_iso(),
     }
 
-    (
-        db.table("responses")
-        .upsert(
-            row,
-            on_conflict="room_code,player_id,game,round_key",
+    try:
+        (
+            db.table("responses")
+            .upsert(
+                row,
+                on_conflict=(
+                    "room_code,player_id,game,round_key"
+                ),
+            )
+            .execute()
         )
-        .execute()
-    )
+        return True
+    except APIError as exc:
+        display_api_error(exc)
+        return False
 
 
 def clear_responses(
     room_code: str,
     game: str | None = None,
 ) -> None:
-    query = (
-        db.table("responses")
-        .delete()
-        .eq("room_code", room_code)
-    )
+    try:
+        query = (
+            db.table("responses")
+            .delete()
+            .eq("room_code", room_code)
+        )
 
-    if game:
-        query = query.eq("game", game)
+        if game:
+            query = query.eq("game", game)
 
-    query.execute()
+        query.execute()
+    except APIError as exc:
+        display_api_error(exc)
 
 
 def reset_scores(room_code: str) -> None:
-    players = get_players(room_code)
-
-    for player in players:
+    for player in get_players(room_code):
         update_player(player["id"], {"score": 0})
 
 
 def build_join_url(room_code: str) -> str:
-    app_url = st.secrets.get(
-        "APP_URL",
-        "https://your-app-name.streamlit.app",
-    ).rstrip("/")
+    app_url = str(
+        st.secrets.get(
+            "APP_URL",
+            "https://your-app-name.streamlit.app",
+        )
+    ).strip().rstrip("/")
 
     return f"{app_url}/?room={room_code}"
 
 
 def create_qr(join_url: str):
     qr = qrcode.QRCode(
-        version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
         box_size=10,
         border=2,
     )
+
     qr.add_data(join_url)
     qr.make(fit=True)
 
     return qr.make_image(
-        fill_color="#4b315f",
-        back_color="white",
-    )
-
-
-def render_brand() -> None:
-    st.markdown(
-        """
-        <div class="bb-brand">
-            <div class="bb-logo">🧸</div>
-            <div>
-                <div class="bb-brand-name">BB Games</div>
-                <p class="bb-brand-copy">
-                    Live baby-shower games for every guest
-                </p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def render_scoreboard(players: list[dict[str, Any]]) -> None:
-    st.subheader(f"Guests · {len(players)}/{MAX_PLAYERS}")
-
-    if not players:
-        st.caption("No guests have joined yet.")
-        return
-
-    for position, player in enumerate(players, start=1):
-        name = html.escape(player["name"])
-        score = int(player.get("score", 0))
-
-        st.markdown(
-            f"""
-            <div class="bb-score-row">
-                <span>{position}. {name}</span>
-                <span class="bb-score-value">{score}</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-
-def valid_bingo(card: list[dict[str, Any]]) -> bool:
-    marked = [bool(space.get("marked")) for space in card]
-
-    lines: list[list[int]] = []
-
-    for row in range(5):
-        lines.append([row * 5 + column for column in range(5)])
-
-    for column in range(5):
-        lines.append([row * 5 + column for row in range(5)])
-
-    lines.append([0, 6, 12, 18, 24])
-    lines.append([4, 8, 12, 16, 20])
-
-    return any(
-        all(marked[index] for index in line)
-        for line in lines
+        fill_color="#176b43",
+        back_color="#ffffff",
     )
 
 
 def verify_host(room: dict[str, Any]) -> bool:
-    supplied_key = safe_text(st.query_params.get("key"), 200)
+    supplied_key = safe_text(
+        st.query_params.get("key"),
+        300,
+    )
+
+    stored_key = str(room.get("host_key", ""))
+
     return bool(supplied_key) and secrets.compare_digest(
         supplied_key,
-        room["host_key"],
+        stored_key,
     )
 
 
 def current_role() -> tuple[str, str | None]:
-    host_code = safe_text(st.query_params.get("host"), ROOM_CODE_LENGTH).upper()
-    room_code = safe_text(st.query_params.get("room"), ROOM_CODE_LENGTH).upper()
+    host_code = safe_text(
+        st.query_params.get("host"),
+        ROOM_CODE_LENGTH,
+    ).upper()
+
+    room_code = safe_text(
+        st.query_params.get("room"),
+        ROOM_CODE_LENGTH,
+    ).upper()
 
     if host_code:
         return "host", host_code
@@ -877,19 +1065,136 @@ def current_role() -> tuple[str, str | None]:
     return "home", None
 
 
-# =========================================================
-# Home screen
-# =========================================================
+def valid_bingo(card: list[dict[str, Any]]) -> bool:
+    if len(card) != 25:
+        return False
+
+    marked = [
+        bool(space.get("marked"))
+        for space in card
+    ]
+
+    lines: list[list[int]] = []
+
+    for row in range(5):
+        lines.append(
+            [row * 5 + column for column in range(5)]
+        )
+
+    for column in range(5):
+        lines.append(
+            [row * 5 + column for row in range(5)]
+        )
+
+    lines.append([0, 6, 12, 18, 24])
+    lines.append([4, 8, 12, 16, 20])
+
+    return any(
+        all(marked[index] for index in line)
+        for line in lines
+    )
+
+
+# ============================================================
+# Shared display components
+# ============================================================
+
+def render_brand() -> None:
+    st.markdown(
+        """
+        <div class="wm-brand">
+            <div class="wm-logo">🍉</div>
+            <div>
+                <div class="wm-brand-name">BB Games</div>
+                <p class="wm-brand-copy">
+                    Sweet baby-shower games for every guest
+                </p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_scoreboard(
+    players: list[dict[str, Any]],
+) -> None:
+    st.subheader(f"Guests · {len(players)}/{MAX_PLAYERS}")
+
+    if not players:
+        st.caption("No guests have joined yet.")
+        return
+
+    for position, player in enumerate(players, start=1):
+        name = html.escape(str(player["name"]))
+        score = int(player.get("score", 0))
+
+        st.markdown(
+            f"""
+            <div class="wm-score-row">
+                <span>{position}. {name}</span>
+                <span class="wm-score-value">
+                    {score}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+# ============================================================
+# Home page
+# ============================================================
+
+def create_host_room() -> None:
+    code = make_room_code()
+    host_key = make_host_key()
+
+    room = {
+        "code": code,
+        "host_key": host_key,
+        "active_game": None,
+        "status": "lobby",
+        "game_state": default_game_state(),
+        "created_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+
+    try:
+        (
+            db.table("rooms")
+            .insert(room)
+            .execute()
+        )
+    except APIError as exc:
+        display_api_error(
+            exc,
+            "Supabase rejected the new room.",
+        )
+        st.stop()
+    except Exception as exc:
+        st.error(
+            "BB Games could not create a room. Check your "
+            "Supabase URL, secret key, tables, and app logs."
+        )
+        st.exception(exc)
+        st.stop()
+
+    st.query_params.clear()
+    st.query_params["host"] = code
+    st.query_params["key"] = host_key
+    st.rerun()
+
 
 def render_home() -> None:
     st.markdown(
         """
-        <div class="bb-hero">
-            <h1>Ready, set, baby!</h1>
-            <p class="bb-subtitle">
-                Host a live baby-shower game on a shared screen.
-                Up to 20 guests can scan the room QR code and submit
-                answers from their phones.
+        <div class="wm-hero">
+            <h1>Sweet games. Tiny guests of honor.</h1>
+            <p>
+                Host three live baby-shower games on a shared screen.
+                Up to 20 guests can scan a QR code and play from
+                their phones.
             </p>
         </div>
         """,
@@ -898,13 +1203,20 @@ def render_home() -> None:
 
     st.write("")
 
-    host_column, join_column = st.columns(2, gap="large")
+    host_column, join_column = st.columns(
+        2,
+        gap="large",
+    )
 
     with host_column:
-        st.markdown('<div class="bb-card">', unsafe_allow_html=True)
-        st.subheader("Host a game")
+        st.markdown(
+            '<div class="wm-card">',
+            unsafe_allow_html=True,
+        )
+        st.subheader("Host BB Games")
         st.write(
-            "Create a new room, display the QR code, and control each round."
+            "Create a room, display the watermelon QR code, "
+            "and control every round."
         )
 
         if st.button(
@@ -912,34 +1224,22 @@ def render_home() -> None:
             type="primary",
             use_container_width=True,
         ):
-            code = make_room_code()
-            host_key = make_host_key()
+            create_host_room()
 
-            room = {
-                "code": code,
-                "host_key": host_key,
-                "active_game": None,
-                "status": "lobby",
-                "game_state": default_game_state(),
-                "created_at": now_iso(),
-                "updated_at": now_iso(),
-            }
-
-            db.table("rooms").insert(room).execute()
-
-            st.query_params.clear()
-            st.query_params["host"] = code
-            st.query_params["key"] = host_key
-            st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
     with join_column:
-        st.markdown('<div class="bb-card">', unsafe_allow_html=True)
-        st.subheader("Join a game")
+        st.markdown(
+            '<div class="wm-card">',
+            unsafe_allow_html=True,
+        )
+        st.subheader("Join a Game")
 
         with st.form("home_join_form"):
-            code = st.text_input(
+            room_code = st.text_input(
                 "Room code",
                 max_chars=ROOM_CODE_LENGTH,
                 placeholder="ABC12",
@@ -951,32 +1251,45 @@ def render_home() -> None:
             )
 
         if submitted:
-            code = safe_text(code, ROOM_CODE_LENGTH).upper()
-            room = get_room(code)
+            room_code = safe_text(
+                room_code,
+                ROOM_CODE_LENGTH,
+            ).upper()
 
-            if not room:
-                st.error("That room could not be found.")
+            if len(room_code) != ROOM_CODE_LENGTH:
+                st.error(
+                    "Enter the five-character room code."
+                )
+            elif not get_room(room_code):
+                st.error(
+                    "That room could not be found."
+                )
             else:
                 st.query_params.clear()
-                st.query_params["room"] = code
+                st.query_params["room"] = room_code
                 st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 
-# =========================================================
-# Host screen
-# =========================================================
+# ============================================================
+# Host controls
+# ============================================================
 
-def start_game(room: dict[str, Any], game: str) -> None:
-    state = default_game_state()
+def start_game(
+    room: dict[str, Any],
+    game: str,
+) -> None:
     reset_scores(room["code"])
     clear_responses(room["code"])
 
-    if game == "bingo":
-        players = get_players(room["code"])
+    game_state = default_game_state()
 
-        for player in players:
+    if game == "bingo":
+        for player in get_players(room["code"]):
             update_player(
                 player["id"],
                 {
@@ -990,50 +1303,65 @@ def start_game(room: dict[str, Any], game: str) -> None:
         {
             "active_game": game,
             "status": "playing",
-            "game_state": state,
+            "game_state": game_state,
         },
     )
 
 
-def render_game_picker(room: dict[str, Any]) -> None:
-    st.subheader("Choose a game")
+def render_game_picker(
+    room: dict[str, Any],
+) -> None:
+    st.subheader("Choose a baby-shower game")
 
     columns = st.columns(3, gap="medium")
 
-    game_options = [
+    options = [
         (
             "bingo",
             "🍼",
             "Baby Bingo",
-            "Call baby-themed words while guests mark unique cards.",
+            (
+                "Call baby-themed words while guests "
+                "mark unique bingo cards."
+            ),
             "",
         ),
         (
             "price",
             "🏷️",
             "Baby Price Challenge",
-            "Guests estimate baby-product prices without going over.",
-            "mint",
+            (
+                "Guests estimate baby-product prices "
+                "without going over."
+            ),
+            "green",
         ),
         (
             "quiz",
             "🧠",
             "Baby Brain Board",
-            "Choose questions from an original baby-themed quiz board.",
+            (
+                "Choose questions and values from an "
+                "original baby-themed quiz board."
+            ),
             "yellow",
         ),
     ]
 
-    for column, option in zip(columns, game_options):
+    for column, option in zip(columns, options):
         game, icon, title, description, css_class = option
 
         with column:
             st.markdown(
                 f"""
-                <div class="bb-game-card {css_class}">
-                    <div class="bb-game-icon">{icon}</div>
-                    <div class="bb-game-title">{title}</div>
-                    <p class="bb-muted">{description}</p>
+                <div class="wm-game-card {css_class}">
+                    <div class="wm-game-icon">{icon}</div>
+                    <div class="wm-game-title">
+                        {title}
+                    </div>
+                    <p class="wm-muted">
+                        {description}
+                    </p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -1048,9 +1376,12 @@ def render_game_picker(room: dict[str, Any]) -> None:
                 st.rerun()
 
 
-def host_bingo(room: dict[str, Any]) -> None:
-    state = room["game_state"]
-    bingo = state["bingo"]
+def host_bingo(
+    room: dict[str, Any],
+) -> None:
+    game_state = room["game_state"]
+    bingo = game_state["bingo"]
+
     called = bingo.get("called", [])
     current = bingo.get("current")
 
@@ -1058,16 +1389,16 @@ def host_bingo(room: dict[str, Any]) -> None:
 
     st.markdown(
         f"""
-        <div class="bb-called">
+        <div class="wm-called">
             {html.escape(current or "Ready to call?")}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    button_column, reset_column = st.columns(2)
+    call_column, reset_column = st.columns(2)
 
-    with button_column:
+    with call_column:
         if st.button(
             "Call Next Item",
             type="primary",
@@ -1075,20 +1406,22 @@ def host_bingo(room: dict[str, Any]) -> None:
             disabled=len(called) >= len(BINGO_WORDS),
         ):
             available = [
-                word for word in BINGO_WORDS
+                word
+                for word in BINGO_WORDS
                 if word not in called
             ]
 
             if available:
                 selected = random.choice(available)
                 called.append(selected)
+
                 bingo["current"] = selected
                 bingo["called"] = called
-                state["bingo"] = bingo
+                game_state["bingo"] = bingo
 
                 update_room(
                     room["code"],
-                    {"game_state": state},
+                    {"game_state": game_state},
                 )
                 st.rerun()
 
@@ -1097,9 +1430,7 @@ def host_bingo(room: dict[str, Any]) -> None:
             "Reset Bingo",
             use_container_width=True,
         ):
-            players = get_players(room["code"])
-
-            for player in players:
+            for player in get_players(room["code"]):
                 update_player(
                     player["id"],
                     {
@@ -1108,7 +1439,7 @@ def host_bingo(room: dict[str, Any]) -> None:
                     },
                 )
 
-            state["bingo"] = {
+            game_state["bingo"] = {
                 "called": [],
                 "current": None,
                 "winner_ids": [],
@@ -1116,7 +1447,7 @@ def host_bingo(room: dict[str, Any]) -> None:
 
             update_room(
                 room["code"],
-                {"game_state": state},
+                {"game_state": game_state},
             )
             st.rerun()
 
@@ -1124,16 +1455,30 @@ def host_bingo(room: dict[str, Any]) -> None:
 
     if called:
         pills = "".join(
-            f'<span class="bb-pill">{html.escape(word)}</span>'
+            (
+                '<span class="wm-pill">'
+                f"{html.escape(word)}"
+                "</span>"
+            )
             for word in called
         )
-        st.markdown(pills, unsafe_allow_html=True)
+
+        st.markdown(
+            pills,
+            unsafe_allow_html=True,
+        )
 
 
-def host_price(room: dict[str, Any]) -> None:
-    state = room["game_state"]
-    price_state = state["price"]
-    round_index = int(price_state.get("round_index", 0))
+def host_price(
+    room: dict[str, Any],
+) -> None:
+    game_state = room["game_state"]
+    price_state = game_state["price"]
+
+    round_index = int(
+        price_state.get("round_index", 0)
+    )
+
     round_data = PRICE_ROUNDS[round_index]
     round_key = f"price-{round_index}"
 
@@ -1147,18 +1492,29 @@ def host_price(room: dict[str, Any]) -> None:
         f"Baby Price Challenge · Round {round_index + 1}"
     )
 
+    revealed_content = (
+        (
+            '<div class="wm-actual-price">'
+            f'{money(float(round_data["price"]))}'
+            "</div>"
+        )
+        if price_state.get("revealed")
+        else f"<strong>{len(responses)} response(s)</strong>"
+    )
+
     st.markdown(
         f"""
-        <div class="bb-price">
-            <div class="bb-product-emoji">{round_data["emoji"]}</div>
-            <h2>{html.escape(round_data["title"])}</h2>
-            <p>{html.escape(round_data["description"])}</p>
-            {
-                f'<div class="bb-actual-price">'
-                f'{money(round_data["price"])}</div>'
-                if price_state.get("revealed")
-                else f'<strong>{len(responses)} response(s)</strong>'
-            }
+        <div class="wm-price">
+            <div class="wm-product-emoji">
+                {round_data["emoji"]}
+            </div>
+            <h2>
+                {html.escape(round_data["title"])}
+            </h2>
+            <p>
+                {html.escape(round_data["description"])}
+            </p>
+            {revealed_content}
         </div>
         """,
         unsafe_allow_html=True,
@@ -1171,18 +1527,18 @@ def host_price(room: dict[str, Any]) -> None:
             "Open Guessing",
             use_container_width=True,
             disabled=(
-                price_state.get("open")
-                or price_state.get("revealed")
+                bool(price_state.get("open"))
+                or bool(price_state.get("revealed"))
             ),
         ):
             price_state["open"] = True
             price_state["revealed"] = False
             price_state["results"] = []
-            state["price"] = price_state
+            game_state["price"] = price_state
 
             update_room(
                 room["code"],
-                {"game_state": state},
+                {"game_state": game_state},
             )
             st.rerun()
 
@@ -1191,28 +1547,31 @@ def host_price(room: dict[str, Any]) -> None:
             "Reveal Price",
             type="primary",
             use_container_width=True,
-            disabled=not price_state.get("open"),
+            disabled=not bool(price_state.get("open")),
         ):
-            scored_results = []
+            actual_price = float(round_data["price"])
+            results: list[dict[str, Any]] = []
 
             for response in responses:
-                guess = float(response["answer"]["amount"])
-                actual = float(round_data["price"])
+                guess = float(
+                    response["answer"]["amount"]
+                )
 
-                scored_results.append(
+                results.append(
                     {
                         "response_id": response["id"],
                         "player_id": response["player_id"],
                         "guess": guess,
-                        "difference": abs(actual - guess),
-                        "over": guess > actual,
+                        "difference": abs(actual_price - guess),
+                        "over": guess > actual_price,
                         "points": 0,
                     }
                 )
 
             eligible = sorted(
                 [
-                    result for result in scored_results
+                    result
+                    for result in results
                     if not result["over"]
                 ],
                 key=lambda item: item["difference"],
@@ -1220,19 +1579,20 @@ def host_price(room: dict[str, Any]) -> None:
 
             if not eligible:
                 eligible = sorted(
-                    scored_results,
+                    results,
                     key=lambda item: item["difference"],
                 )
 
-            points_by_place = [3, 2, 1]
+            point_values = [3, 2, 1]
 
             for place, result in enumerate(eligible[:3]):
-                earned = points_by_place[place]
+                earned = point_values[place]
 
-                if result["guess"] == round_data["price"]:
+                if result["guess"] == actual_price:
                     earned += 2
 
                 result["points"] = earned
+
                 player = get_player(
                     room["code"],
                     result["player_id"],
@@ -1242,31 +1602,37 @@ def host_price(room: dict[str, Any]) -> None:
                     update_player(
                         player["id"],
                         {
-                            "score": int(player["score"]) + earned,
+                            "score": (
+                                int(player.get("score", 0))
+                                + earned
+                            )
                         },
                     )
 
-                (
-                    db.table("responses")
-                    .update(
-                        {
-                            "graded": True,
-                            "points_awarded": earned,
-                            "updated_at": now_iso(),
-                        }
+                try:
+                    (
+                        db.table("responses")
+                        .update(
+                            {
+                                "graded": True,
+                                "points_awarded": earned,
+                                "updated_at": now_iso(),
+                            }
+                        )
+                        .eq("id", result["response_id"])
+                        .execute()
                     )
-                    .eq("id", result["response_id"])
-                    .execute()
-                )
+                except APIError as exc:
+                    display_api_error(exc)
 
             price_state["open"] = False
             price_state["revealed"] = True
-            price_state["results"] = scored_results
-            state["price"] = price_state
+            price_state["results"] = results
+            game_state["price"] = price_state
 
             update_room(
                 room["code"],
-                {"game_state": state},
+                {"game_state": game_state},
             )
             st.rerun()
 
@@ -1274,7 +1640,9 @@ def host_price(room: dict[str, Any]) -> None:
         if st.button(
             "Next Item",
             use_container_width=True,
-            disabled=not price_state.get("revealed"),
+            disabled=not bool(
+                price_state.get("revealed")
+            ),
         ):
             price_state["round_index"] = (
                 round_index + 1
@@ -1283,11 +1651,11 @@ def host_price(room: dict[str, Any]) -> None:
             price_state["open"] = False
             price_state["revealed"] = False
             price_state["results"] = []
-            state["price"] = price_state
+            game_state["price"] = price_state
 
             update_room(
                 room["code"],
-                {"game_state": state},
+                {"game_state": game_state},
             )
             st.rerun()
 
@@ -1301,49 +1669,70 @@ def host_price(room: dict[str, Any]) -> None:
             price_state.get("results", []),
             key=lambda item: (
                 -int(item.get("points", 0)),
-                float(item["difference"]),
+                float(item.get("difference", 0)),
             ),
         )
 
-        st.subheader("Round results")
+        st.subheader("Round Results")
+
+        if not results:
+            st.info("No guesses were submitted.")
 
         for result in results:
-            player = players_by_id.get(result["player_id"])
-            name = player["name"] if player else "Guest"
+            player = players_by_id.get(
+                result["player_id"]
+            )
 
-            label = (
+            name = (
+                player["name"]
+                if player
+                else "Guest"
+            )
+
+            result_label = (
                 f"+{result['points']} points"
                 if result.get("points")
-                else "Over" if result["over"] else "—"
+                else "Over"
+                if result.get("over")
+                else "—"
             )
 
             st.markdown(
                 f"""
-                <div class="bb-score-row">
+                <div class="wm-score-row">
                     <span>
                         {html.escape(name)} ·
                         {money(float(result["guess"]))}
                     </span>
-                    <span class="bb-score-value">{label}</span>
+                    <span class="wm-score-value">
+                        {result_label}
+                    </span>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
 
-def quiz_key(category_index: int, question_index: int) -> str:
+def quiz_key(
+    category_index: int,
+    question_index: int,
+) -> str:
     return f"{category_index}-{question_index}"
 
 
-def host_quiz(room: dict[str, Any]) -> None:
-    state = room["game_state"]
-    quiz = state["quiz"]
-    selected = quiz.get("selected")
+def host_quiz(
+    room: dict[str, Any],
+) -> None:
+    game_state = room["game_state"]
+    quiz_state = game_state["quiz"]
+    selected = quiz_state.get("selected")
 
     st.subheader("Baby Brain Board")
 
     if not selected:
-        header_columns = st.columns(len(QUIZ_CATEGORIES))
+        header_columns = st.columns(
+            len(QUIZ_CATEGORIES)
+        )
 
         for column, category in zip(
             header_columns,
@@ -1352,7 +1741,7 @@ def host_quiz(room: dict[str, Any]) -> None:
             with column:
                 st.markdown(
                     f"""
-                    <div class="bb-quiz-header">
+                    <div class="wm-quiz-header">
                         {html.escape(category["name"])}
                     </div>
                     """,
@@ -1360,9 +1749,13 @@ def host_quiz(room: dict[str, Any]) -> None:
                 )
 
         for question_index in range(4):
-            row_columns = st.columns(len(QUIZ_CATEGORIES))
+            row_columns = st.columns(
+                len(QUIZ_CATEGORIES)
+            )
 
-            for category_index, column in enumerate(row_columns):
+            for category_index, column in enumerate(
+                row_columns
+            ):
                 question = QUIZ_CATEGORIES[
                     category_index
                 ]["questions"][question_index]
@@ -1372,7 +1765,7 @@ def host_quiz(room: dict[str, Any]) -> None:
                     question_index,
                 )
 
-                used = key in quiz.get("used", [])
+                used = key in quiz_state.get("used", [])
 
                 with column:
                     if st.button(
@@ -1381,7 +1774,7 @@ def host_quiz(room: dict[str, Any]) -> None:
                         use_container_width=True,
                         disabled=used,
                     ):
-                        quiz["selected"] = {
+                        quiz_state["selected"] = {
                             "category_index": category_index,
                             "question_index": question_index,
                             "category": QUIZ_CATEGORIES[
@@ -1389,13 +1782,14 @@ def host_quiz(room: dict[str, Any]) -> None:
                             ]["name"],
                             **question,
                         }
-                        quiz["open"] = True
-                        quiz["revealed"] = False
-                        state["quiz"] = quiz
+
+                        quiz_state["open"] = True
+                        quiz_state["revealed"] = False
+                        game_state["quiz"] = quiz_state
 
                         update_room(
                             room["code"],
-                            {"game_state": state},
+                            {"game_state": game_state},
                         )
                         st.rerun()
 
@@ -1414,21 +1808,21 @@ def host_quiz(room: dict[str, Any]) -> None:
 
     answer_markup = ""
 
-    if quiz.get("revealed"):
+    if quiz_state.get("revealed"):
         answer_markup = (
-            f'<div class="bb-answer">'
+            '<div class="wm-answer">'
             f'Answer: {html.escape(selected["answer"])}'
-            f'</div>'
+            "</div>"
         )
 
     st.markdown(
         f"""
-        <div class="bb-question">
+        <div class="wm-question">
             <p>
                 {html.escape(selected["category"])}
                 · {selected["value"]} points
             </p>
-            <div class="bb-question-text">
+            <div class="wm-question-text">
                 {html.escape(selected["question"])}
             </div>
             <p>{len(responses)} response(s)</p>
@@ -1445,27 +1839,29 @@ def host_quiz(room: dict[str, Any]) -> None:
             "Reveal Answer",
             type="primary",
             use_container_width=True,
-            disabled=not quiz.get("open"),
+            disabled=not bool(
+                quiz_state.get("open")
+            ),
         ):
-            quiz["open"] = False
-            quiz["revealed"] = True
+            quiz_state["open"] = False
+            quiz_state["revealed"] = True
 
             selected_key = quiz_key(
                 selected["category_index"],
                 selected["question_index"],
             )
 
-            used = quiz.get("used", [])
+            used = quiz_state.get("used", [])
 
             if selected_key not in used:
                 used.append(selected_key)
 
-            quiz["used"] = used
-            state["quiz"] = quiz
+            quiz_state["used"] = used
+            game_state["quiz"] = quiz_state
 
             update_room(
                 room["code"],
-                {"game_state": state},
+                {"game_state": game_state},
             )
             st.rerun()
 
@@ -1473,41 +1869,56 @@ def host_quiz(room: dict[str, Any]) -> None:
         if st.button(
             "Back to Board",
             use_container_width=True,
-            disabled=not quiz.get("revealed"),
+            disabled=not bool(
+                quiz_state.get("revealed")
+            ),
         ):
-            quiz["selected"] = None
-            quiz["open"] = False
-            quiz["revealed"] = False
-            state["quiz"] = quiz
+            quiz_state["selected"] = None
+            quiz_state["open"] = False
+            quiz_state["revealed"] = False
+            game_state["quiz"] = quiz_state
 
             update_room(
                 room["code"],
-                {"game_state": state},
+                {"game_state": game_state},
             )
             st.rerun()
 
-    if quiz.get("revealed"):
+    if quiz_state.get("revealed"):
         players_by_id = {
             player["id"]: player
             for player in get_players(room["code"])
         }
 
-        st.subheader("Grade responses")
+        st.subheader("Grade Responses")
+
+        if not responses:
+            st.info("No answers were submitted.")
 
         for response in responses:
-            player = players_by_id.get(response["player_id"])
-            name = player["name"] if player else "Guest"
+            player = players_by_id.get(
+                response["player_id"]
+            )
+
+            player_name = (
+                player["name"]
+                if player
+                else "Guest"
+            )
+
             answer = safe_text(
                 response["answer"].get("text"),
                 150,
             )
 
-            response_column, correct_column, miss_column = st.columns(
-                [5, 1.4, 1.2]
+            answer_column, correct_column, miss_column = (
+                st.columns([5, 1.4, 1.2])
             )
 
-            with response_column:
-                st.write(f"**{name}:** {answer}")
+            with answer_column:
+                st.write(
+                    f"**{player_name}:** {answer}"
+                )
 
             if response.get("graded"):
                 with correct_column:
@@ -1528,22 +1939,34 @@ def host_quiz(room: dict[str, Any]) -> None:
                         update_player(
                             player["id"],
                             {
-                                "score": int(player["score"]) + points,
+                                "score": (
+                                    int(
+                                        player.get(
+                                            "score",
+                                            0,
+                                        )
+                                    )
+                                    + points
+                                )
                             },
                         )
 
-                    (
-                        db.table("responses")
-                        .update(
-                            {
-                                "graded": True,
-                                "points_awarded": points,
-                                "updated_at": now_iso(),
-                            }
+                    try:
+                        (
+                            db.table("responses")
+                            .update(
+                                {
+                                    "graded": True,
+                                    "points_awarded": points,
+                                    "updated_at": now_iso(),
+                                }
+                            )
+                            .eq("id", response["id"])
+                            .execute()
                         )
-                        .eq("id", response["id"])
-                        .execute()
-                    )
+                    except APIError as exc:
+                        display_api_error(exc)
+
                     st.rerun()
 
             with miss_column:
@@ -1552,80 +1975,101 @@ def host_quiz(room: dict[str, Any]) -> None:
                     key=f"miss_{response['id']}",
                     use_container_width=True,
                 ):
-                    (
-                        db.table("responses")
-                        .update(
-                            {
-                                "graded": True,
-                                "points_awarded": 0,
-                                "updated_at": now_iso(),
-                            }
+                    try:
+                        (
+                            db.table("responses")
+                            .update(
+                                {
+                                    "graded": True,
+                                    "points_awarded": 0,
+                                    "updated_at": now_iso(),
+                                }
+                            )
+                            .eq("id", response["id"])
+                            .execute()
                         )
-                        .eq("id", response["id"])
-                        .execute()
-                    )
+                    except APIError as exc:
+                        display_api_error(exc)
+
                     st.rerun()
 
 
 @st.fragment(run_every="2s")
-def host_live_area(room_code: str) -> None:
+def host_live_area(
+    room_code: str,
+) -> None:
     room = get_room(room_code)
 
     if not room:
-        st.error("This room no longer exists.")
+        st.error(
+            "This room no longer exists."
+        )
         return
 
-    players = get_players(room_code)
-
-    game_column, sidebar_column = st.columns(
+    game_column, scoreboard_column = st.columns(
         [3, 1],
         gap="large",
     )
 
     with game_column:
-        if not room.get("active_game"):
+        active_game = room.get("active_game")
+
+        if not active_game:
             render_game_picker(room)
-        elif room["active_game"] == "bingo":
+        elif active_game == "bingo":
             host_bingo(room)
-        elif room["active_game"] == "price":
+        elif active_game == "price":
             host_price(room)
-        elif room["active_game"] == "quiz":
+        elif active_game == "quiz":
             host_quiz(room)
 
-    with sidebar_column:
-        render_scoreboard(players)
+    with scoreboard_column:
+        render_scoreboard(
+            get_players(room_code)
+        )
 
 
-def render_host(room_code: str) -> None:
+def render_host(
+    room_code: str,
+) -> None:
     room = get_room(room_code)
 
     if not room:
-        st.error("That host room could not be found.")
+        st.error(
+            "That host room could not be found."
+        )
+
         if st.button("Return Home"):
             st.query_params.clear()
             st.rerun()
+
         return
 
     if not verify_host(room):
-        st.error("The host key is missing or invalid.")
+        st.error(
+            "The host key is missing or invalid."
+        )
         st.write(
-            "Open the original host link used when this room was created."
+            "Open the original private host link "
+            "created with this room."
         )
         return
 
-    top_left, top_right = st.columns([3, 1])
+    title_column, menu_column = st.columns(
+        [3, 1]
+    )
 
-    with top_left:
+    with title_column:
         st.markdown(
             f"""
-            <div class="bb-room-code">
+            <div class="wm-room-code">
                 ROOM {html.escape(room_code)}
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    with top_right:
+    with menu_column:
         if room.get("active_game"):
             if st.button(
                 "Game Menu",
@@ -1643,46 +2087,55 @@ def render_host(room_code: str) -> None:
     st.write("")
 
     join_url = build_join_url(room_code)
-    qr_image = create_qr(join_url)
 
     with st.expander(
         "Guest QR code and join link",
-        expanded=not bool(room.get("active_game")),
+        expanded=not bool(
+            room.get("active_game")
+        ),
     ):
-        qr_column, instructions_column = st.columns(
+        qr_column, instruction_column = st.columns(
             [1, 2],
             gap="large",
         )
 
         with qr_column:
             st.image(
-                qr_image,
+                create_qr(join_url),
                 caption=f"Room {room_code}",
                 width=280,
             )
 
-        with instructions_column:
-            st.subheader("Scan to join")
-            st.code(join_url, language=None)
+        with instruction_column:
+            st.subheader("Scan to Join")
+            st.code(
+                join_url,
+                language=None,
+            )
             st.write(
-                "Guests can also open the BB Games website and enter "
-                f"room code **{room_code}**."
+                "Guests can also visit the BB Games website "
+                f"and enter room code **{room_code}**."
             )
 
     host_live_area(room_code)
 
 
-# =========================================================
-# Player screen
-# =========================================================
+# ============================================================
+# Player screens
+# ============================================================
 
-def join_player_form(room: dict[str, Any]) -> None:
+def join_player_form(
+    room: dict[str, Any],
+) -> None:
     st.markdown(
         f"""
-        <div class="bb-card">
-            <h2>Join room {html.escape(room["code"])}</h2>
-            <p class="bb-muted">
-                Enter the name that should appear on the scoreboard.
+        <div class="wm-card">
+            <h2>
+                Join room {html.escape(room["code"])}
+            </h2>
+            <p class="wm-muted">
+                Enter the name that should appear
+                on the scoreboard.
             </p>
         </div>
         """,
@@ -1707,7 +2160,10 @@ def join_player_form(room: dict[str, Any]) -> None:
     if not submitted:
         return
 
-    player_name = safe_text(player_name, 24)
+    player_name = safe_text(
+        player_name,
+        24,
+    )
 
     if not player_name:
         st.error("Please enter your name.")
@@ -1716,23 +2172,36 @@ def join_player_form(room: dict[str, Any]) -> None:
     players = get_players(room["code"])
 
     if len(players) >= MAX_PLAYERS:
-        st.error("This room already has 20 guests.")
+        st.error(
+            "This room already has 20 guests."
+        )
         return
 
     player_id = str(uuid.uuid4())
 
-    db.table("players").insert(
-        {
-            "id": player_id,
-            "room_code": room["code"],
-            "name": player_name,
-            "score": 0,
-            "bingo_card": make_bingo_card(),
-            "bingo_claimed": False,
-            "created_at": now_iso(),
-            "updated_at": now_iso(),
-        }
-    ).execute()
+    try:
+        (
+            db.table("players")
+            .insert(
+                {
+                    "id": player_id,
+                    "room_code": room["code"],
+                    "name": player_name,
+                    "score": 0,
+                    "bingo_card": make_bingo_card(),
+                    "bingo_claimed": False,
+                    "created_at": now_iso(),
+                    "updated_at": now_iso(),
+                }
+            )
+            .execute()
+        )
+    except APIError as exc:
+        display_api_error(
+            exc,
+            "Supabase rejected the new player.",
+        )
+        return
 
     st.query_params["pid"] = player_id
     st.rerun()
@@ -1742,29 +2211,46 @@ def player_bingo(
     room: dict[str, Any],
     player: dict[str, Any],
 ) -> None:
-    state = room["game_state"]["bingo"]
-    called = state.get("called", [])
-    current = state.get("current")
-    card = player.get("bingo_card") or make_bingo_card()
+    bingo_state = room["game_state"]["bingo"]
+    called = bingo_state.get("called", [])
+    current = bingo_state.get("current")
+
+    card = (
+        player.get("bingo_card")
+        or make_bingo_card()
+    )
 
     st.subheader("Baby Bingo")
-    st.info(f"Latest call: {current or 'Waiting for the host…'}")
+    st.info(
+        f"Latest call: {current or 'Waiting for the host…'}"
+    )
 
     for row in range(5):
         columns = st.columns(5, gap="small")
 
-        for column_index, column in enumerate(columns):
+        for column_index, column in enumerate(
+            columns
+        ):
             index = row * 5 + column_index
             space = card[index]
+
+            label = str(space["label"])
             marked = bool(space.get("marked"))
-            label = space["label"]
 
             with column:
-                button_label = f"✓ {label}" if marked else label
+                button_label = (
+                    f"✓ {label}"
+                    if marked
+                    else label
+                )
 
                 if st.button(
                     button_label,
-                    key=f"bingo_{player['id']}_{index}",
+                    key=(
+                        f"bingo_"
+                        f"{player['id']}_"
+                        f"{index}"
+                    ),
                     use_container_width=True,
                     disabled=label == "FREE",
                 ):
@@ -1773,7 +2259,9 @@ def player_bingo(
                             "That item has not been called yet."
                         )
                     else:
-                        card[index]["marked"] = not marked
+                        card[index]["marked"] = (
+                            not marked
+                        )
 
                         update_player(
                             player["id"],
@@ -1785,38 +2273,49 @@ def player_bingo(
         "I Have Bingo!",
         type="primary",
         use_container_width=True,
-        disabled=bool(player.get("bingo_claimed")),
+        disabled=bool(
+            player.get("bingo_claimed")
+        ),
     ):
         if not valid_bingo(card):
             st.error(
-                "No completed row, column, or diagonal was found."
+                "No completed row, column, "
+                "or diagonal was found."
             )
         else:
             update_player(
                 player["id"],
                 {
-                    "score": int(player["score"]) + 10,
+                    "score": (
+                        int(player.get("score", 0))
+                        + 10
+                    ),
                     "bingo_claimed": True,
                 },
             )
 
-            state_data = room["game_state"]
-            winner_ids = state.get("winner_ids", [])
+            game_state = room["game_state"]
+            winner_ids = bingo_state.get(
+                "winner_ids",
+                [],
+            )
 
             if player["id"] not in winner_ids:
                 winner_ids.append(player["id"])
 
-            state["winner_ids"] = winner_ids
-            state_data["bingo"] = state
+            bingo_state["winner_ids"] = winner_ids
+            game_state["bingo"] = bingo_state
 
             update_room(
                 room["code"],
-                {"game_state": state_data},
+                {"game_state": game_state},
             )
 
             st.balloons()
-            st.success("Baby Bingo! You earned 10 points.")
-            time.sleep(1)
+            st.success(
+                "Baby Bingo! You earned 10 points."
+            )
+            time.sleep(0.8)
             st.rerun()
 
 
@@ -1825,7 +2324,11 @@ def player_price(
     player: dict[str, Any],
 ) -> None:
     price_state = room["game_state"]["price"]
-    round_index = int(price_state.get("round_index", 0))
+
+    round_index = int(
+        price_state.get("round_index", 0)
+    )
+
     round_data = PRICE_ROUNDS[round_index]
     round_key = f"price-{round_index}"
 
@@ -1848,10 +2351,16 @@ def player_price(
 
     st.markdown(
         f"""
-        <div class="bb-price">
-            <div class="bb-product-emoji">{round_data["emoji"]}</div>
-            <h2>{html.escape(round_data["title"])}</h2>
-            <p>{html.escape(round_data["description"])}</p>
+        <div class="wm-price">
+            <div class="wm-product-emoji">
+                {round_data["emoji"]}
+            </div>
+            <h2>
+                {html.escape(round_data["title"])}
+            </h2>
+            <p>
+                {html.escape(round_data["description"])}
+            </p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1860,31 +2369,43 @@ def player_price(
     if price_state.get("revealed"):
         st.markdown(
             f"""
-            <div class="bb-actual-price">
-                {money(round_data["price"])}
+            <div class="wm-actual-price">
+                {money(float(round_data["price"]))}
             </div>
             """,
             unsafe_allow_html=True,
         )
 
         if own_response:
-            points = int(own_response.get("points_awarded", 0))
-            st.info(
-                f"Your guess: "
-                f"{money(float(own_response['answer']['amount']))}"
-                + (
-                    f" · You earned {points} points!"
-                    if points
-                    else ""
+            points = int(
+                own_response.get(
+                    "points_awarded",
+                    0,
                 )
             )
+
+            message = (
+                "Your guess: "
+                f"{money(float(own_response['answer']['amount']))}"
+            )
+
+            if points:
+                message += (
+                    f" · You earned {points} points!"
+                )
+
+            st.info(message)
         else:
-            st.info("You did not submit a guess this round.")
+            st.info(
+                "You did not submit a guess this round."
+            )
 
         return
 
     if not price_state.get("open"):
-        st.info("Waiting for the host to open guessing.")
+        st.info(
+            "Waiting for the host to open guessing."
+        )
         return
 
     if own_response:
@@ -1894,7 +2415,9 @@ def player_price(
         )
         return
 
-    with st.form(f"price_form_{round_index}"):
+    with st.form(
+        f"price_form_{round_index}"
+    ):
         guess = st.number_input(
             "Your price guess",
             min_value=0.00,
@@ -1913,16 +2436,24 @@ def player_price(
 
     if submitted:
         if guess is None:
-            st.error("Enter a valid price.")
-        else:
-            save_response(
-                room["code"],
-                player["id"],
-                "price",
-                round_key,
-                {"amount": round(float(guess), 2)},
+            st.error(
+                "Enter a valid price."
             )
-            st.success("Your guess is locked in.")
+        elif save_response(
+            room["code"],
+            player["id"],
+            "price",
+            round_key,
+            {
+                "amount": round(
+                    float(guess),
+                    2,
+                )
+            },
+        ):
+            st.success(
+                "Your guess is locked in."
+            )
             st.rerun()
 
 
@@ -1930,13 +2461,15 @@ def player_quiz(
     room: dict[str, Any],
     player: dict[str, Any],
 ) -> None:
-    quiz = room["game_state"]["quiz"]
-    selected = quiz.get("selected")
+    quiz_state = room["game_state"]["quiz"]
+    selected = quiz_state.get("selected")
 
     st.subheader("Baby Brain Board")
 
     if not selected:
-        st.info("Waiting for the host to choose a question.")
+        st.info(
+            "Waiting for the host to choose a question."
+        )
         return
 
     round_key = (
@@ -1961,21 +2494,21 @@ def player_quiz(
 
     answer_markup = ""
 
-    if quiz.get("revealed"):
+    if quiz_state.get("revealed"):
         answer_markup = (
-            f'<div class="bb-answer">'
+            '<div class="wm-answer">'
             f'Answer: {html.escape(selected["answer"])}'
-            f'</div>'
+            "</div>"
         )
 
     st.markdown(
         f"""
-        <div class="bb-question">
+        <div class="wm-question">
             <p>
                 {html.escape(selected["category"])}
                 · {selected["value"]} points
             </p>
-            <div class="bb-question-text">
+            <div class="wm-question-text">
                 {html.escape(selected["question"])}
             </div>
             {answer_markup}
@@ -1984,31 +2517,49 @@ def player_quiz(
         unsafe_allow_html=True,
     )
 
-    if quiz.get("revealed"):
+    if quiz_state.get("revealed"):
         if own_response:
-            points = int(own_response.get("points_awarded", 0))
-            st.info(
-                f'Your answer: {own_response["answer"]["text"]}'
-                + (
-                    f" · {points} points"
-                    if own_response.get("graded")
-                    else " · Waiting for grading"
+            points = int(
+                own_response.get(
+                    "points_awarded",
+                    0,
                 )
             )
+
+            response_message = (
+                "Your answer: "
+                f'{own_response["answer"]["text"]}'
+            )
+
+            if own_response.get("graded"):
+                response_message += (
+                    f" · {points} points"
+                )
+            else:
+                response_message += (
+                    " · Waiting for grading"
+                )
+
+            st.info(response_message)
+
         return
 
-    if not quiz.get("open"):
-        st.info("This question is closed.")
+    if not quiz_state.get("open"):
+        st.info(
+            "This question is closed."
+        )
         return
 
     if own_response:
         st.success(
-            f'Your answer is locked in: '
+            "Your answer is locked in: "
             f'{own_response["answer"]["text"]}'
         )
         return
 
-    with st.form(f"quiz_form_{round_key}"):
+    with st.form(
+        f"quiz_form_{round_key}"
+    ):
         answer = st.text_input(
             "Your answer",
             max_chars=120,
@@ -2022,19 +2573,25 @@ def player_quiz(
         )
 
     if submitted:
-        answer = safe_text(answer, 120)
+        answer = safe_text(
+            answer,
+            120,
+        )
 
         if not answer:
-            st.error("Enter an answer first.")
-        else:
-            save_response(
-                room["code"],
-                player["id"],
-                "quiz",
-                round_key,
-                {"text": answer},
+            st.error(
+                "Enter an answer first."
             )
-            st.success("Your answer is locked in.")
+        elif save_response(
+            room["code"],
+            player["id"],
+            "quiz",
+            round_key,
+            {"text": answer},
+        ):
+            st.success(
+                "Your answer is locked in."
+            )
             st.rerun()
 
 
@@ -2044,51 +2601,78 @@ def player_live_area(
     player_id: str,
 ) -> None:
     room = get_room(room_code)
-    player = get_player(room_code, player_id)
+    player = get_player(
+        room_code,
+        player_id,
+    )
 
     if not room:
-        st.error("This room is no longer available.")
+        st.error(
+            "This room is no longer available."
+        )
         return
 
     if not player:
-        st.error("Your player record could not be found.")
+        st.error(
+            "Your player record could not be found."
+        )
         return
 
-    top_left, top_right = st.columns([3, 1])
+    greeting_column, score_column = st.columns(
+        [3, 1]
+    )
 
-    with top_left:
+    with greeting_column:
         st.markdown(
             f"""
-            <div class="bb-room-code">
+            <div class="wm-room-code">
                 ROOM {html.escape(room_code)}
             </div>
             """,
             unsafe_allow_html=True,
         )
-        st.subheader(f"Hi, {player['name']}!")
+        st.subheader(
+            f"Hi, {player['name']}!"
+        )
 
-    with top_right:
-        st.metric("Score", int(player.get("score", 0)))
+    with score_column:
+        st.metric(
+            "Score",
+            int(player.get("score", 0)),
+        )
 
     active_game = room.get("active_game")
 
     if not active_game:
-        st.info("Waiting for the host to choose a game.")
-        return
-
-    if active_game == "bingo":
-        player_bingo(room, player)
+        st.info(
+            "Waiting for the host to choose a game."
+        )
+    elif active_game == "bingo":
+        player_bingo(
+            room,
+            player,
+        )
     elif active_game == "price":
-        player_price(room, player)
+        player_price(
+            room,
+            player,
+        )
     elif active_game == "quiz":
-        player_quiz(room, player)
+        player_quiz(
+            room,
+            player,
+        )
 
 
-def render_player(room_code: str) -> None:
+def render_player(
+    room_code: str,
+) -> None:
     room = get_room(room_code)
 
     if not room:
-        st.error("That room could not be found.")
+        st.error(
+            "That room could not be found."
+        )
 
         if st.button("Return Home"):
             st.query_params.clear()
@@ -2096,32 +2680,47 @@ def render_player(room_code: str) -> None:
 
         return
 
-    player_id = safe_text(st.query_params.get("pid"), 100)
+    player_id = safe_text(
+        st.query_params.get("pid"),
+        100,
+    )
 
     if not player_id:
         join_player_form(room)
         return
 
-    player = get_player(room_code, player_id)
+    player = get_player(
+        room_code,
+        player_id,
+    )
 
     if not player:
-        st.query_params.pop("pid", None)
+        try:
+            del st.query_params["pid"]
+        except KeyError:
+            pass
+
         st.rerun()
 
-    player_live_area(room_code, player_id)
+    player_live_area(
+        room_code,
+        player_id,
+    )
 
 
-# =========================================================
-# App router
-# =========================================================
+# ============================================================
+# Main router
+# ============================================================
 
 render_brand()
 
-role, code = current_role()
+role, room_code = current_role()
 
 if role == "home":
     render_home()
-elif role == "host" and code:
-    render_host(code)
-elif role == "player" and code:
-    render_player(code)
+
+elif role == "host" and room_code:
+    render_host(room_code)
+
+elif role == "player" and room_code:
+    render_player(room_code)
